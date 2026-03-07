@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo",
+
+    // Project Structure & Build Performance
+    "composite": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": false,
+    "importHelpers": true,
+    "isolatedModules": true,
+    "noEmitOnError": true,
+    "baseUrl": ".",
+
+    // Language Environment
+    "target": "es2023",
+    "lib": ["es2023"],
+
+    // Module Resolution. Default to `NodeNext` for all packages. React apps should use
+    // `bundler` instead.
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+
+    // Strictness & Error Checking
+    "strict": true,
+    "noUnusedLocals": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noUnusedParameters": true,
+    "noUncheckedSideEffectImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true
+  }
+}

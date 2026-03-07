@@ -1,0 +1,36 @@
+{
+  "name": "knowledge-agent",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx --env-file=.env src/index.ts",
+    "build": "tsc",
+    "start": "node --env-file=.env dist/index.js",
+    "format": "biome format --write .",
+    "lint": "biome lint .",
+    "check": "biome check .",
+    "check-and-fix": "biome check --write --unsafe .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.1.5",
+    "@langfuse/otel": "^4.6.1",
+    "@langfuse/tracing": "^4.6.1",
+    "@mariozechner/pi-ai": "^0.56.1",
+    "@mariozechner/pi-coding-agent": "^0.56.1",
+    "@opentelemetry/sdk-node": "^0.213.0",
+    "@sinclair/typebox": "^0.34.33",
+    "exa-js": "^1.4.9",
+    "hyparquet": "^1.25.1",
+    "langfuse": "^3.38.6",
+    "p-limit": "^7.3.0",
+    "zod": "^3.24.4"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.0.0",
+    "@types/node": "^22.15.21",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "vitest": "^4.0.18"
+  }
+}
