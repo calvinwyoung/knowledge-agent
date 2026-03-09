@@ -42,9 +42,8 @@ export async function run(
   const questions = await benchmark.load(options);
   const sessionId = buildSessionId(benchmark.name, agentName);
 
-  // Create a session-scoped workspace directory to isolate file operations. Replace `/`
-  // characters in the session ID to something that's safe for filesystem paths.
-  const workspaceDir = path.resolve(WORKSPACES_DIR, sessionId.replaceAll('/', '_'));
+  // Create a session-scoped workspace directory to isolate file operations.
+  const workspaceDir = path.resolve(WORKSPACES_DIR, sessionId);
   console.log(`Loaded ${questions.length} questions from "${benchmark.name}"\n`);
 
   const limit = pLimit(options.concurrency ?? 1);

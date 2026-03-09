@@ -78,17 +78,17 @@ describe('createObservationRecorder', () => {
 });
 
 describe('buildSessionId', () => {
-  it('formats as benchmark/agent/YYYY-MM-DD-HHMM', () => {
+  it('formats as benchmark__agent__YYYY-MM-DD-HHMM', () => {
     // 2025-07-15 09:30 UTC → 2025-07-15 02:30 America/Los_Angeles (PDT, UTC-7).
     const date = new Date('2025-07-15T09:30:00Z');
     const id = buildSessionId('gaia', 'my-agent', date);
-    expect(id).toBe('gaia/my-agent/2025-07-15-0230');
+    expect(id).toBe('gaia__my-agent__2025-07-15-0230');
   });
 
   it('zero-pads single-digit months and days', () => {
     // 2025-01-05 16:05 UTC → 2025-01-05 08:05 America/Los_Angeles (PST, UTC-8).
     const date = new Date('2025-01-05T16:05:00Z');
     const id = buildSessionId('bench', 'agent', date);
-    expect(id).toBe('bench/agent/2025-01-05-0805');
+    expect(id).toBe('bench__agent__2025-01-05-0805');
   });
 });

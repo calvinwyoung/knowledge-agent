@@ -8,8 +8,8 @@ export const submitAnswerTool: ToolDefinition = {
   parameters: Type.Object({
     answer: Type.String({
       description:
-        'The final answer — just the value, no extra commentary, ' +
-        'units (unless asked), or explanation.',
+        'The final answer value only — no reasoning, explanation, or ' +
+        'units (unless asked). E.g. "42", not "The answer is 42."',
     }),
   }),
   async execute() {

@@ -72,8 +72,10 @@ ${additionalTools}
 - Always use relative paths (never absolute paths like /Users/…).
   Your working directory is already set to the correct location.
 - When you have your final answer, call the \`submit_answer\` tool with
-  just the answer value — no extra commentary, units (unless asked),
-  or explanation.`;
+  only the answer value — no reasoning, no explanation, no extra
+  commentary, no units (unless asked). For example, if the answer is
+  "42", submit just "42", not "The answer is 42." or any surrounding
+  text.`;
 }
 
 /**
@@ -110,7 +112,8 @@ export function createPiCodingAgent(options: PiCodingAgentOptions = {}): Agent {
       // used since we don't need persistence across runs.
       const { session } = await createAgentSession({
         cwd,
-        model: getModel('anthropic', 'claude-sonnet-4-6'),
+        // model: getModel('anthropic', 'claude-sonnet-4-6'),
+        model: getModel('anthropic', 'claude-sonnet-4-20250514'),
         thinkingLevel: 'off',
         tools: createCodingTools(cwd),
         customTools: [submitAnswerTool, ...(customTools ?? [])],

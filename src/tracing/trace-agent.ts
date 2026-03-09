@@ -106,5 +106,5 @@ export function buildSessionId(
     formatter.formatToParts(now).map((p) => [p.type, p.value]),
   );
   const timestamp = `${parts.year}-${parts.month}-${parts.day}-${parts.hour}${parts.minute}`;
-  return `${benchmarkName}/${agentName}/${timestamp}`;
+  return `${benchmarkName}__${agentName}__${timestamp}`;
 }

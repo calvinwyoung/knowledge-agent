@@ -2,12 +2,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createClaudeAgent } from './index.js';
 
-const { mockQuery } = vi.hoisted(() => ({
+const { mockQuery, mockAnswerServer } = vi.hoisted(() => ({
   mockQuery: vi.fn(),
+  mockAnswerServer: { type: 'sdk', name: 'answer' },
 }));
 
 vi.mock('@anthropic-ai/claude-agent-sdk', () => ({
   query: mockQuery,
+}));
+
+vi.mock('./submit-answer-tool.js', () => ({
+  answerMcpServer: mockAnswerServer,
 }));
 
 /**
@@ -24,50 +29,53 @@ describe('createClaudeAgent', () => {
     vi.clearAllMocks();
   });
 
-  it('prefers structured output answer on successful result', async () => {
+  it('passes mcpServers option to query', async () => {
     mockQuery.mockReturnValueOnce(
       streamMessages([
         {
           type: 'result',
           subtype: 'success',
-          result: 'fallback-result',
-          structured_output: { answer: 'structured-answer' },
+          result: 'result-text',
         },
       ]),
     );
 
     const agent = createClaudeAgent();
-    const answer = await agent.solve({
+    await agent.solve({
       id: 'q1',
       prompt: 'What is 2 + 2?',
       expectedAnswer: '4',
       metadata: {},
     });
 
-    expect(answer).toBe('structured-answer');
     expect(mockQuery).toHaveBeenCalledTimes(1);
     const params = mockQuery.mock.calls[0][0] as {
-      options: { outputFormat?: { type?: string; schema?: Record<string, unknown> } };
+      options: { mcpServers?: Record<string, unknown> };
     };
-    expect(params.options.outputFormat?.type).toBe('json_schema');
-    expect(params.options.outputFormat?.schema).toMatchObject({
-      type: 'object',
-      properties: {
-        answer: { type: 'string' },
-      },
-      required: ['answer'],
-      additionalProperties: false,
-    });
+    expect(params.options.mcpServers).toBeDefined();
+    expect(params.options.mcpServers).toHaveProperty('answer');
   });
 
-  it('falls back to result text when structured output is missing or invalid', async () => {
+  it('extracts answer from submit_answer tool-use block', async () => {
     mockQuery.mockReturnValueOnce(
       streamMessages([
+        {
+          type: 'assistant',
+          message: {
+            content: [
+              { type: 'text', text: 'Let me compute that.' },
+              {
+                type: 'tool_use',
+                name: 'mcp__answer__submit_answer',
+                input: { answer: 'tool-answer' },
+              },
+            ],
+          },
+        },
         {
           type: 'result',
           subtype: 'success',
           result: 'fallback-result',
-          structured_output: { answer: 42 },
         },
       ]),
     );
@@ -75,27 +83,21 @@ describe('createClaudeAgent', () => {
     const agent = createClaudeAgent();
     const answer = await agent.solve({
       id: 'q2',
-      prompt: 'Return answer.',
-      expectedAnswer: 'fallback-result',
+      prompt: 'What is 2 + 2?',
+      expectedAnswer: '4',
       metadata: {},
     });
 
-    expect(answer).toBe('fallback-result');
+    expect(answer).toBe('tool-answer');
   });
 
-  it('returns last assistant text when structured output retries are exhausted', async () => {
+  it('falls back to result text when no submit_answer call', async () => {
     mockQuery.mockReturnValueOnce(
       streamMessages([
         {
-          type: 'assistant',
-          message: {
-            content: [{ type: 'text', text: 'assistant-fallback' }],
-          },
-        },
-        {
           type: 'result',
-          subtype: 'error_max_structured_output_retries',
-          errors: ['schema validation failed'],
+          subtype: 'success',
+          result: 'fallback-result',
         },
       ]),
     );
@@ -104,11 +106,11 @@ describe('createClaudeAgent', () => {
     const answer = await agent.solve({
       id: 'q3',
       prompt: 'Return answer.',
-      expectedAnswer: 'assistant-fallback',
+      expectedAnswer: 'fallback-result',
       metadata: {},
     });
 
-    expect(answer).toBe('assistant-fallback');
+    expect(answer).toBe('fallback-result');
   });
 
   it('returns last assistant text when max turns exceeded', async () => {
@@ -151,7 +153,6 @@ describe('createClaudeAgent', () => {
           type: 'result',
           subtype: 'success',
           result: '',
-          structured_output: { answer: 42 },
         },
       ]),
     );

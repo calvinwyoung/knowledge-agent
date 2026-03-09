@@ -1,19 +1,13 @@
 import { query } from '@anthropic-ai/claude-agent-sdk';
-import { toJSONSchema, z } from 'zod/v4';
 
 import { createObservationRecorder } from '../../tracing/trace-agent.js';
 import type { Agent } from '../types.js';
+import { answerMcpServer } from './submit-answer-tool.js';
 
 interface ClaudeAgentOptions {
   maxTurns?: number;
   systemPrompt?: string;
 }
-
-const AnswerOutputSchema = z
-  .object({
-    answer: z.string(),
-  })
-  .strict();
 
 const DEFAULT_SYSTEM_PROMPT = `You are a research agent that solves questions \
 by thinking carefully and using tools to gather evidence before answering.
@@ -51,9 +45,11 @@ by thinking carefully and using tools to gather evidence before answering.
   giving up.
 - Always use relative paths (never absolute paths like /Users/…).
   Your working directory is already set to the correct location.
-- Return your final answer in structured output field \`answer\` with
-  only the answer value, no extra commentary, units (unless asked), or
-  explanation.`;
+- When you have your final answer, call the \`submit_answer\` tool with
+  only the answer value — no reasoning, no explanation, no extra
+  commentary, no units (unless asked). For example, if the answer is
+  "42", submit just "42", not "The answer is 42." or any surrounding
+  text.`;
 
 /**
  * Wrap the Claude Agent SDK into the Agent interface so it can be used for benchmark evaluation.
@@ -75,9 +71,8 @@ export function createClaudeAgent(options: ClaudeAgentOptions = {}): Agent {
           allowDangerouslySkipPermissions: true,
           maxTurns,
           systemPrompt,
-          outputFormat: {
-            type: 'json_schema',
-            schema: toJSONSchema(AnswerOutputSchema),
+          mcpServers: {
+            answer: answerMcpServer,
           },
         },
       });
@@ -86,6 +81,7 @@ export function createClaudeAgent(options: ClaudeAgentOptions = {}): Agent {
       // inline as messages arrive.
       const recordObservation = createObservationRecorder();
       let result = '';
+      let submitAnswerValue = '';
       let fallbackAssistantText = '';
       for await (const message of conversation) {
         if (message.type === 'assistant') {
@@ -95,6 +91,10 @@ export function createClaudeAgent(options: ClaudeAgentOptions = {}): Agent {
           for (const block of message.message.content) {
             if (block.type === 'tool_use') {
               recordObservation(block.name, { input: block.input });
+              // Capture the answer from a submit_answer tool call.
+              if (block.name === 'mcp__answer__submit_answer') {
+                submitAnswerValue = (block.input as { answer: string }).answer;
+              }
             } else if (block.type === 'text') {
               recordObservation('generation', { output: block.text });
               fallbackAssistantText = block.text;
@@ -109,15 +109,11 @@ export function createClaudeAgent(options: ClaudeAgentOptions = {}): Agent {
           });
         } else if (message.type === 'result') {
           if (message.subtype === 'success') {
-            const structured = AnswerOutputSchema.safeParse(message.structured_output);
             // Use || so empty strings fall through to the next candidate.
-            result =
-              (structured.success ? structured.data.answer : null) ??
-              (message.result || fallbackAssistantText);
+            result = submitAnswerValue || message.result || fallbackAssistantText;
           } else {
-            // Any error subtype (max_turns, execution error, structured
-            // output retries exhausted) — fall back to the last assistant
-            // text we captured.
+            // Any error subtype (max_turns, execution error) — fall back
+            // to the last assistant text we captured.
             result = fallbackAssistantText;
           }
         }
