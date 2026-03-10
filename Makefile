@@ -16,11 +16,13 @@ gaia-pi-coding-agent-all:
 
 .PHONY: gaia-pi-coding-agent-with-tools-sample
 gaia-pi-coding-agent-with-tools-sample:
-	pnpm dev run --agent pi-coding-agent-with-tools --benchmark gaia --file ./data/gaia/2023/validation/metadata.parquet --level 1 --concurrency 3 --limit 3
+	# pnpm dev run --agent pi-coding-agent-with-tools --benchmark gaia --file ./data/gaia/2023/validation/metadata.parquet --level 1 --concurrency 3 --limit 3
+	pnpm dev run --agent pi-coding-agent-with-tools --benchmark gaia --file ./data/gaia/2023/validation/metadata.parquet --level 1 --concurrency 1 --limit 3
 
 .PHONY: gaia-pi-coding-agent-with-tools-all
 gaia-pi-coding-agent-with-tools-all:
-	pnpm dev run --agent pi-coding-agent-with-tools --benchmark gaia --file ./data/gaia/2023/validation/metadata.parquet --level 1 --concurrency 10
+	# pnpm dev run --agent pi-coding-agent-with-tools --benchmark gaia --file ./data/gaia/2023/validation/metadata.parquet --level 1 --concurrency 10
+	pnpm dev run --agent pi-coding-agent-with-tools --benchmark gaia --file ./data/gaia/2023/validation/metadata.parquet --level 1 --concurrency 1
 
 .PHONY: download-datasetes
 download-datasets:

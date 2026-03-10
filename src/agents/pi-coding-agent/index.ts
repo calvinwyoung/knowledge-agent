@@ -108,13 +108,15 @@ export function createPiCodingAgent(options: PiCodingAgentOptions = {}): Agent {
         mkdirSync(cwd, { recursive: true });
       }
 
-      // Thinking is disabled for faster benchmark throughput, and an in-memory session is
-      // used since we don't need persistence across runs.
+      // Use medium reasoning effort for OpenAI models. Note: 'off' disables reasoning
+      // entirely for OpenAI (via a "Juice: 0" developer message), which prevents tool
+      // use on non-trivial questions.
       const { session } = await createAgentSession({
         cwd,
-        // model: getModel('anthropic', 'claude-sonnet-4-6'),
-        model: getModel('anthropic', 'claude-sonnet-4-20250514'),
-        thinkingLevel: 'off',
+        // The runtime registry includes gpt-5.4, but the generated type literals in pi-ai
+        // lag behind. Cast to satisfy the compiler.
+        model: getModel('openai', 'gpt-5.4' as const),
+        thinkingLevel: 'high',
         tools: createCodingTools(cwd),
         customTools: [submitAnswerTool, ...(customTools ?? [])],
         resourceLoader: loader,
@@ -122,6 +124,12 @@ export function createPiCodingAgent(options: PiCodingAgentOptions = {}): Agent {
       });
 
       await session.prompt(question.prompt);
+
+      // session.prompt() does not throw on API errors — it stores them in
+      // state.error. Surface the error so the caller can handle it.
+      if (session.state.error) {
+        throw new Error(session.state.error);
+      }
 
       // pi-coding-agent doesn't expose a streaming event API, so we reconstruct
       // tracing spans from the completed message history.
